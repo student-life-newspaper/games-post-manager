@@ -34,6 +34,7 @@ function games_post_creator_form() {
         $title = sanitize_text_field($_POST['games_post_creator_title']);
         $date = sanitize_text_field($_POST['games_post_creator_date']);
         $game_type = sanitize_text_field($_POST['games_post_creator_game_type']);
+        $crossword_size = sanitize_text_field($_POST['games_post_creator_crossword_size']);
         $embed_code = $_POST['games_post_creator_embed_code'];
 
         // Create a new post programmatically
@@ -45,6 +46,7 @@ function games_post_creator_form() {
             'post_content' => $embed_code,
             'meta_input' => array(
                 'embed_code' => $embed_code,
+                'crossword_size' => $crossword_size
             ),
 
         );
@@ -78,14 +80,21 @@ function games_post_creator_form() {
                     <td><input type="date" name="games_post_creator_date" id="games_post_creator_date" class="regular-text" required></td>
                 </tr>
                 <tr>
-                    <th scope="row"><label for="games_post_creator_game_tyep">Game Type</label></th>
+                    <th scope="row"><label for="games_post_creator_game_type">Game Type</label></th>
                     <td>
                         <select name="games_post_creator_game_type" id="games_post_creator_game_type">
                             <option value="Crossword">Crossword</option>
                         </select>
                     </td>
                 </tr>
-
+                <tr>
+                    <th scope="row"><label for="games_post_creator_crossword_size">Crossword Size</label></th>
+                    <td>
+                        <select name="games_post_creator_crossword_size" id="games_post_creator_crossword_size">
+                            <option value="small">Small</option>
+                            <option value="medium">Medium</option>
+                            <option value="large">Large</option>
+                        </select>
                 <tr>
                     <th scope="row"><label for"games_post_creator_embed_cde">Embed Code</label></th>
                     <td><textarea name="games_post_creator_embed_code" id="games_post_creator_embed_code" class="large-text" rows="5"></textarea></td>
