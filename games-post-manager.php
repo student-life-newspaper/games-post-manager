@@ -27,6 +27,13 @@ function games_post_creator_menu() {
     );
 }
 
+
+function convertLinkToEmbed($url) {
+   $cleaned_link = preg_replace('#(/a/puzzle/)#', '/e/puzzle/', $url);
+   echo "<script>console.log('CLEANED LINK $cleaned_link');</script>";
+   return '[iframe src="' . $cleaned_link . '"]';
+}
+
 // Form rendering and submission handling
 function games_post_creator_form() {
     // Check if form is submitted
@@ -36,6 +43,10 @@ function games_post_creator_form() {
         $game_type = sanitize_text_field($_POST['games_post_creator_game_type']);
         $crossword_size = sanitize_text_field($_POST['games_post_creator_crossword_size']);
         $embed_code = $_POST['games_post_creator_embed_code'];
+        $iframe_shortcode = convertLinkToEmbed($embed_code);
+        $description = sanitize_text_field($_POST['games_post_creator_description']);
+
+        $content = $iframe_shortcode . '<br>' . $description;
 
         // Create a new post programmatically
         $new_post = array(
@@ -43,9 +54,9 @@ function games_post_creator_form() {
             'post_date'     => $date,
             'post_status'   => 'publish', // or 'draft'
             'post_type'     => 'games',
-            'post_content' => $embed_code,
+            'post_content' => $content,
             'meta_input' => array(
-                'embed_code' => $embed_code,
+                'embed_code' => $iframe_shortcode,
                 'crossword_size' => $crossword_size
             ),
 
@@ -53,6 +64,12 @@ function games_post_creator_form() {
 
         // Insert the post into the database
         $post_id = wp_insert_post($new_post);
+        // log error if post is not created
+        if (is_wp_error($post_id)) {
+            echo '<div class="notice notice-error is-dismissible"><p>Error creating post!</p></div>';
+            error_log($post_id->get_error_message());
+            return;
+        }
 
         // Display success message if post is created
         if ($post_id) {
@@ -60,8 +77,6 @@ function games_post_creator_form() {
             wp_set_object_terms($post_id, $game_type, 'game_type');
             echo '<div class="notice notice-success is-dismissible"><p>Post created successfully!</p><a href="' . get_permalink($post_id) . '">View Post</a></div>';
             echo "<script>console.log('GAME TYPE $game_type');</script>";
-        } else {
-            echo '<div class="notice notice-error is-dismissible"><p>Error creating post!</p></div>';
         }
     }
 
@@ -96,8 +111,12 @@ function games_post_creator_form() {
                             <option value="large">Large</option>
                         </select>
                 <tr>
-                    <th scope="row"><label for"games_post_creator_embed_cde">Embed Code</label></th>
-                    <td><textarea name="games_post_creator_embed_code" id="games_post_creator_embed_code" class="large-text" rows="5"></textarea></td>
+                    <th scope="row"><label for="games_post_creator_embed_cde">Puzzle Link</label></th>
+                    <td><input name="games_post_creator_embed_code" id="games_post_creator_embed_code" class="large-text" type="url" required></td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="games_post_creator_description">Description</label></th>
+                    <td><textarea name="games_post_creator_description" id="games_post_creator_description" class="large-text" type="text" rows="5"></textarea></td>
                 </tr>
             </table>
             <?php submit_button('Create Post', 'primary', 'games_post_creator_submit'); ?>

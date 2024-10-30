@@ -2,6 +2,7 @@ This plugin creates an admin-side interface for programatically adding new Game 
 
 This plugin helps users create those posts.
 
+This plugin requires [The iframe plugin](https://wordpress.org/plugins/iframe/)
 
 ## Installation
 

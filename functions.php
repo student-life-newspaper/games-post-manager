@@ -1,4 +1,5 @@
 <?php
+
 /* Custom Post Type and Taxonomy Start */
 function create_posttype() {
     // Register the custom post type with 'news' slug but label it as 'Games'
@@ -44,6 +45,85 @@ function register_embed_code_meta() {
         'show_in_rest' => true, // Set to true to make it available in the REST API
     ));
 }
+
+
+function register_crossword_size_meta() {
+    register_post_meta('games', 'crossword_size', array(
+        // type is an emum (small, medium, large)
+        'type' => 'string',
+        'description' => 'Size of the crossword puzzle',
+        'single' => true,
+        'show_in_rest' => true,
+    ));
+}
+
+
+function crossword_size_custom_column($columns) {
+    $columns['crossword_size'] = 'Crossword Size';
+    return $columns;
+}
+
+
+function display_crossword_size_column($column, $post_id) {
+    if ($column == 'crossword_size') {
+        $value = get_post_meta($post_id, 'crossword_size', true);
+        echo esc_html($value ?: 'N/A');
+    }
+}
+
+
+function crossword_size_quick_edit_script() {
+    ?>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const wp_inline_edit = inlineEditPost.edit;
+        inlineEditPost.edit = function(post_id) {
+            wp_inline_edit.apply(this, arguments);
+            const postId = typeof(post_id) === 'object' ? parseInt(this.getId(post_id)) : post_id;
+            if (postId > 0) {
+                const crosswordSize = document.querySelector(`#post-${postId} .column-crossword_size`).textContent.trim();
+                document.querySelector('select[name="crossword_size"]').value = crosswordSize;
+            }
+        };
+    });
+    </script>
+    <?php
+}
+
+add_action('admin_footer', 'crossword_size_quick_edit_script');
+
+function add_quick_edit_crossword_size($column_name) {
+    if ($column_name == 'crossword_size') {
+        ?>
+        <fieldset class="inline-edit-col-left">
+            <div class="inline-edit-col">
+                <label>
+                    <span class="title">Crossword Size</span>
+                    <select name="crossword_size">
+                        <option value="small">Small</option>
+                        <option value="medium">Medium</option>
+                        <option value="large">Large</option>
+                    </select>
+                </label>
+            </div>
+        </fieldset>
+        <?php
+    }
+}
+
+
+
+function save_crossword_size_quick_edit($post_id) {
+    if (isset($_POST['crossword_size'])) {
+        update_post_meta($post_id, 'crossword_size', sanitize_text_field($_POST['crossword_size']));
+    }
+}
+
+add_action('save_post', 'save_crossword_size_quick_edit');
+add_action('quick_edit_custom_box', 'add_quick_edit_crossword_size', 10, 2);
+add_action('manage_games_posts_custom_column', 'display_crossword_size_column', 10, 2);
+
+add_filter('manage_games_posts_columns', 'crossword_size_custom_column');
 add_action('init', 'register_embed_code_meta');
 // Hooking up our function to theme setup
 add_action('init', 'create_posttype');
