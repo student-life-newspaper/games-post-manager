@@ -38,13 +38,13 @@ function convertLinkToEmbed($url) {
 function games_post_creator_form() {
     // Check if form is submitted
     if (isset($_POST['games_post_creator_submit'])) {
-        $title = sanitize_text_field($_POST['games_post_creator_title']);
+        $title = $_POST['games_post_creator_title'];
         $date = sanitize_text_field($_POST['games_post_creator_date']);
         $game_type = sanitize_text_field($_POST['games_post_creator_game_type']);
         $crossword_size = sanitize_text_field($_POST['games_post_creator_crossword_size']);
         $embed_code = $_POST['games_post_creator_embed_code'];
         $iframe_shortcode = convertLinkToEmbed($embed_code);
-        $description = sanitize_text_field($_POST['games_post_creator_description']);
+        $description = $_POST['games_post_creator_description'];
 
         $content = $iframe_shortcode;
 
