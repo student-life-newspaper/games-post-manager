@@ -46,7 +46,7 @@ function games_post_creator_form() {
         $iframe_shortcode = convertLinkToEmbed($embed_code);
         $description = sanitize_text_field($_POST['games_post_creator_description']);
 
-        $content = $iframe_shortcode . '<br>' . $description;
+        $content = $iframe_shortcode;
 
         // Create a new post programmatically
         $new_post = array(
@@ -57,7 +57,10 @@ function games_post_creator_form() {
             'post_content' => $content,
             'meta_input' => array(
                 'embed_code' => $iframe_shortcode,
-                'crossword_size' => $crossword_size
+                'crossword_size' => $crossword_size,
+                'constructor' => sanitize_text_field($_POST['games_post_creator_constructor']),
+                'editor' => sanitize_text_field($_POST['games_post_creator_editor']),
+                'description' => $description,
             ),
 
         );
@@ -117,6 +120,14 @@ function games_post_creator_form() {
                 <tr>
                     <th scope="row"><label for="games_post_creator_description">Description</label></th>
                     <td><textarea name="games_post_creator_description" id="games_post_creator_description" class="large-text" type="text" rows="5"></textarea></td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="games_post_creator_constructor">Constructor</label></th>
+                    <td><input type="text" name="games_post_creator_constructor" id="games_post_creator_constructor" class="regular-text" required></td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="games_post_creator_editor">Editor</label></th>
+                    <td><input type="text" name="games_post_creator_editor" id="games_post_creator_editor" class="regular-text" ></td>
                 </tr>
             </table>
             <?php submit_button('Create Post', 'primary', 'games_post_creator_submit'); ?>
