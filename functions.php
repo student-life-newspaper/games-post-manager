@@ -53,6 +53,14 @@ function register_additional_meta() {
         'show_in_rest' => true,
     ));
 
+    // Category meta field
+    register_post_meta('games', 'category', array(
+        'type'         => 'string',
+        'description'  => 'Category of the game',
+        'single'       => true,
+        'show_in_rest' => true,
+    ));
+
     // Description meta field
     register_post_meta('games', 'description', array(
         'type'         => 'string',
@@ -85,6 +93,7 @@ function games_custom_columns($columns) {
     $columns['crossword_size'] = 'Crossword Size';
     $columns['editor'] = 'Editor';
     $columns['constructor'] = 'Constructor';
+    $columns['category'] = 'Category';
     $columns['description'] = 'Description';
     return $columns;
 }
@@ -101,6 +110,9 @@ function display_games_custom_columns($column, $post_id) {
         echo esc_html($value ?: 'N/A');
     } elseif ($column == 'constructor') {
         $value = get_post_meta($post_id, 'constructor', true);
+        echo esc_html($value ?: 'N/A');
+    } elseif ($column == 'category') {
+        $value = get_post_meta($post_id, 'category', true);
         echo esc_html($value ?: 'N/A');
     } elseif ($column == 'description') {
         $value = get_post_meta($post_id, 'description', true);
@@ -134,6 +146,11 @@ function crossword_size_quick_edit_script() {
                     const constructor = row.querySelector('.column-constructor').textContent.trim();
                     const constructorField = document.querySelector('input[name="constructor"]');
                     if (constructorField) constructorField.value = constructor !== 'N/A' ? constructor : '';
+
+                    // Category
+                    const category = row.querySelector('.column-category').textContent.trim();
+                    const categoryField = document.querySelector('input[name="category"]');
+                    if (categoryField) categoryField.value = category !== 'N/A' ? category : '';
 
                     // Description
                     const description = row.querySelector('.column-description').textContent.trim();
@@ -174,6 +191,11 @@ function add_quick_edit_custom_fields($column_name, $post) {
                         <span class="title">Constructor</span>
                         <input type="text" name="constructor" value="">
                     </label>
+                <?php elseif ($column_name == 'category'): ?>
+                    <label>
+                        <span class="title">Category</span>
+                        <input type="text" name="category" value="">
+                    </label>
                 <?php elseif ($column_name == 'description'): ?>
                     <label>
                         <span class="title">Description</span>
@@ -197,6 +219,9 @@ function save_crossword_size_quick_edit($post_id) {
     }
     if (isset($_POST['constructor'])) {
         update_post_meta($post_id, 'constructor', sanitize_text_field($_POST['constructor']));
+    }
+    if (isset($_POST['category'])) {
+        update_post_meta($post_id, 'category', sanitize_text_field($_POST['category']));
     }
     if (isset($_POST['description'])) {
         update_post_meta($post_id, 'description', $_POST['description']);

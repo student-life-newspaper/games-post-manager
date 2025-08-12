@@ -43,6 +43,7 @@ function games_post_creator_form() {
         $game_type = sanitize_text_field($_POST['games_post_creator_game_type']);
         $crossword_size = sanitize_text_field($_POST['games_post_creator_crossword_size']);
         $embed_code = $_POST['games_post_creator_embed_code'];
+        $category = sanitize_text_field($_POST['games_post_creator_category']);
         $iframe_shortcode = convertLinkToEmbed($embed_code);
         $description = $_POST['games_post_creator_description'];
 
@@ -60,6 +61,7 @@ function games_post_creator_form() {
                 'crossword_size' => $crossword_size,
                 'constructor' => sanitize_text_field($_POST['games_post_creator_constructor']),
                 'editor' => sanitize_text_field($_POST['games_post_creator_editor']),
+                'category' => $category,
                 'description' => $description,
             ),
 
@@ -114,8 +116,12 @@ function games_post_creator_form() {
                             <option value="large">Large</option>
                         </select>
                 <tr>
-                    <th scope="row"><label for="games_post_creator_embed_cde">Puzzle Link</label></th>
+                    <th scope="row"><label for="games_post_creator_embed_code">Puzzle Link</label></th>
                     <td><input name="games_post_creator_embed_code" id="games_post_creator_embed_code" class="large-text" type="url" required></td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="games_post_creator_category">Category</label></th>
+                    <td><input type="text" name="games_post_creator_category" id="games_post_creator_category" class="regular-text"></td>
                 </tr>
                 <tr>
                     <th scope="row"><label for="games_post_creator_description">Description</label></th>
