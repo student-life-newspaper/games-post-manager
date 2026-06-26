@@ -20,7 +20,7 @@ function games_post_creator_menu() {
         'Add Games Post',             // Page title
         'Games Post Creator',             // Menu title
         'manage_options',           // Capability
-        'games-post-maanger',      // Menu slug
+        'games-post-manager',      // Menu slug
         'games_post_creator_form', // Callback function
         'dashicons-admin-post',     // Icon
         20                          // Position
@@ -43,7 +43,9 @@ function games_post_creator_form() {
         $game_type = sanitize_text_field($_POST['games_post_creator_game_type']);
         $crossword_size = sanitize_text_field($_POST['games_post_creator_crossword_size']);
         $embed_code = $_POST['games_post_creator_embed_code'];
-        $category = sanitize_text_field($_POST['games_post_creator_category']);
+        $category = !empty($_POST['games_post_creator_category']) 
+            ? sanitize_text_field($_POST['games_post_creator_category']) 
+            : 'Other';        
         $iframe_shortcode = convertLinkToEmbed($embed_code);
         $description = $_POST['games_post_creator_description'];
 
