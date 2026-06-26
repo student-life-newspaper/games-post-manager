@@ -12,7 +12,7 @@ function create_posttype() {
             'public' => true,
             'has_archive' => false,
             'rewrite' => array('slug' => 'games'), // Customize the slug
-            'supports' => array('title', 'editor', 'thumbnail'),
+            'supports' => array('title', 'editor', 'thumbnail', 'custom-fields'),
             'taxonomies' => array('game_type'), // Declare the custom taxonomy here
         )
     );
@@ -87,6 +87,79 @@ function register_additional_meta() {
 }
 add_action('init', 'register_additional_meta');
 
+function games_metadata_fields() {
+    return array(
+        'crossword_size' => array(
+            'label' => 'Crossword Size',
+            'type' => 'select',
+            'options' => array(
+                'small' => 'Small',
+                'medium' => 'Medium',
+                'large' => 'Large',
+            ),
+        ),
+        'editor' => array(
+            'label' => 'Editor',
+            'type' => 'text',
+        ),
+        'constructor' => array(
+            'label' => 'Constructor',
+            'type' => 'text',
+        ),
+        'category' => array(
+            'label' => 'Category',
+            'type' => 'text',
+        ),
+        'description' => array(
+            'label' => 'Description',
+            'type' => 'textarea',
+        ),
+        'embed_code' => array(
+            'label' => 'Puzzle Link',
+            'type' => 'url',
+        ),
+    );
+}
+
+function add_games_metadata_meta_box() {
+    add_meta_box(
+        'games_metadata',
+        'Game Metadata',
+        'render_games_metadata_meta_box',
+        'games',
+        'normal',
+        'default'
+    );
+}
+add_action('add_meta_boxes', 'add_games_metadata_meta_box');
+
+function render_games_metadata_meta_box($post) {
+    wp_nonce_field('save_games_metadata', 'games_metadata_nonce');
+
+    foreach (games_metadata_fields() as $key => $field) {
+        $value = get_post_meta($post->ID, $key, true);
+        ?>
+        <p>
+            <label for="games_meta_<?php echo esc_attr($key); ?>"><strong><?php echo esc_html($field['label']); ?></strong></label><br>
+            <?php if ($field['type'] === 'select'): ?>
+                <select id="games_meta_<?php echo esc_attr($key); ?>" name="<?php echo esc_attr($key); ?>">
+                    <option value="">Select size</option>
+                    <?php foreach ($field['options'] as $option_value => $option_label): ?>
+                        <option value="<?php echo esc_attr($option_value); ?>" <?php selected($value, $option_value); ?>>
+                            <?php echo esc_html($option_label); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            <?php elseif ($field['type'] === 'textarea'): ?>
+                <textarea id="games_meta_<?php echo esc_attr($key); ?>" name="<?php echo esc_attr($key); ?>" class="large-text" rows="4"><?php echo esc_textarea($value); ?></textarea>
+            <?php else: ?>
+                <input id="games_meta_<?php echo esc_attr($key); ?>" name="<?php echo esc_attr($key); ?>" class="regular-text" type="<?php echo esc_attr($field['type']); ?>" value="<?php echo esc_attr($value); ?>">
+            <?php endif; ?>
+        </p>
+        <?php
+    }
+}
+
 
 
 function games_custom_columns($columns) {
@@ -123,40 +196,49 @@ add_action('manage_games_posts_custom_column', 'display_games_custom_columns', 1
 
 function crossword_size_quick_edit_script() {
     ?>
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const wp_inline_edit = inlineEditPost.edit;
-        inlineEditPost.edit = function(post_id) {
-            wp_inline_edit.apply(this, arguments);
-            const postId = typeof(post_id) === 'object' ? parseInt(this.getId(post_id)) : post_id;
-            if (postId > 0) {
-                const row = document.querySelector(`#post-${postId}`);
-                if (row) {
-                    // Crossword Size
-                    const crosswordSize = row.querySelector('.column-crossword_size').textContent.trim();
-                    const sizeField = document.querySelector('select[name="crossword_size"]');
-                    if (sizeField) sizeField.value = crosswordSize;
+	    <script>
+	    document.addEventListener('DOMContentLoaded', function() {
+	        if (typeof inlineEditPost === 'undefined') {
+	            return;
+	        }
 
-                    // Editor
-                    const editor = row.querySelector('.column-editor').textContent.trim();
-                    const editorField = document.querySelector('input[name="editor"]');
-                    if (editorField) editorField.value = editor !== 'N/A' ? editor : '';
+	        const getColumnText = function(row, selector) {
+	            const column = row.querySelector(selector);
+	            return column ? column.textContent.trim() : '';
+	        };
 
-                    // Constructor
-                    const constructor = row.querySelector('.column-constructor').textContent.trim();
-                    const constructorField = document.querySelector('input[name="constructor"]');
-                    if (constructorField) constructorField.value = constructor !== 'N/A' ? constructor : '';
-
-                    // Category
-                    const category = row.querySelector('.column-category').textContent.trim();
-                    const categoryField = document.querySelector('input[name="category"]');
-                    if (categoryField) categoryField.value = category !== 'N/A' ? category : '';
-
-                    // Description
-                    const description = row.querySelector('.column-description').textContent.trim();
-                    const descriptionField = document.querySelector('textarea[name="description"]');
-                    if (descriptionField) descriptionField.value = description !== 'N/A' ? description : '';
-                }
+	        const wp_inline_edit = inlineEditPost.edit;
+	        inlineEditPost.edit = function(post_id) {
+	            wp_inline_edit.apply(this, arguments);
+	            const postId = typeof(post_id) === 'object' ? parseInt(this.getId(post_id)) : post_id;
+	            if (postId > 0) {
+	                const row = document.querySelector(`#post-${postId}`);
+	                if (row) {
+	                    // Crossword Size
+	                    const crosswordSize = getColumnText(row, '.column-crossword_size');
+	                    const sizeField = document.querySelector('select[name="crossword_size"]');
+	                    if (sizeField) sizeField.value = crosswordSize;
+	
+	                    // Editor
+	                    const editor = getColumnText(row, '.column-editor');
+	                    const editorField = document.querySelector('input[name="editor"]');
+	                    if (editorField) editorField.value = editor !== 'N/A' ? editor : '';
+	
+	                    // Constructor
+	                    const constructor = getColumnText(row, '.column-constructor');
+	                    const constructorField = document.querySelector('input[name="constructor"]');
+	                    if (constructorField) constructorField.value = constructor !== 'N/A' ? constructor : '';
+	
+	                    // Category
+	                    const category = getColumnText(row, '.column-category');
+	                    const categoryField = document.querySelector('input[name="category"]');
+	                    if (categoryField) categoryField.value = category !== 'N/A' ? category : '';
+	
+	                    // Description
+	                    const description = getColumnText(row, '.column-description');
+	                    const descriptionField = document.querySelector('textarea[name="description"]');
+	                    if (descriptionField) descriptionField.value = description !== 'N/A' ? description : '';
+	                }
             }
         };
     });
@@ -168,7 +250,7 @@ add_action('admin_footer', 'crossword_size_quick_edit_script');
 
 function add_quick_edit_custom_fields($column_name, $post) {
     $post_id = $post->ID;
-    if (in_array($column_name, ['crossword_size', 'editor', 'constructor', 'description'])) {
+    if (in_array($column_name, ['crossword_size', 'editor', 'constructor', 'category', 'description'])) {
         ?>
         <fieldset class="inline-edit-col-left">
             <div class="inline-edit-col">
@@ -211,20 +293,34 @@ add_action('quick_edit_custom_box', 'add_quick_edit_custom_fields', 10, 2);
 
 
 function save_crossword_size_quick_edit($post_id) {
-    if (isset($_POST['crossword_size'])) {
-        update_post_meta($post_id, 'crossword_size', sanitize_text_field($_POST['crossword_size']));
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+        return;
     }
-    if (isset($_POST['editor'])) {
-        update_post_meta($post_id, 'editor', sanitize_text_field($_POST['editor']));
+
+    if (wp_is_post_revision($post_id) || get_post_type($post_id) !== 'games') {
+        return;
     }
-    if (isset($_POST['constructor'])) {
-        update_post_meta($post_id, 'constructor', sanitize_text_field($_POST['constructor']));
+
+    if (!current_user_can('edit_post', $post_id)) {
+        return;
     }
-    if (isset($_POST['category'])) {
-        update_post_meta($post_id, 'category', sanitize_text_field($_POST['category']));
+
+    if (
+        isset($_POST['games_metadata_nonce']) &&
+        !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['games_metadata_nonce'])), 'save_games_metadata')
+    ) {
+        return;
     }
-    if (isset($_POST['description'])) {
-        update_post_meta($post_id, 'description', $_POST['description']);
+
+    foreach (games_metadata_fields() as $key => $field) {
+        if (!isset($_POST[$key])) {
+            continue;
+        }
+
+        $raw_value = wp_unslash($_POST[$key]);
+        $value = $field['type'] === 'textarea' ? sanitize_textarea_field($raw_value) : sanitize_text_field($raw_value);
+
+        update_post_meta($post_id, $key, $value);
     }
 }
 add_action('save_post', 'save_crossword_size_quick_edit');
