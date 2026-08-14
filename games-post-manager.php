@@ -38,16 +38,23 @@ function convertLinkToEmbed($url) {
 function games_post_creator_form() {
     // Check if form is submitted
     if (isset($_POST['games_post_creator_submit'])) {
-        $title = $_POST['games_post_creator_title'];
-        $date = sanitize_text_field($_POST['games_post_creator_date']);
-        $game_type = sanitize_text_field($_POST['games_post_creator_game_type']);
-        $crossword_size = sanitize_text_field($_POST['games_post_creator_crossword_size']);
-        $embed_code = $_POST['games_post_creator_embed_code'];
-        $category = !empty($_POST['games_post_creator_category']) 
-            ? sanitize_text_field($_POST['games_post_creator_category']) 
-            : 'Other';        
+        check_admin_referer('games_post_creator_create', 'games_post_creator_nonce');
+        $title = sanitize_text_field(wp_unslash($_POST['games_post_creator_title']));
+        $date = sanitize_text_field(wp_unslash($_POST['games_post_creator_date']));
+        $game_type = sanitize_text_field(wp_unslash($_POST['games_post_creator_game_type']));
+        $crossword_size = sanitize_text_field(wp_unslash($_POST['games_post_creator_crossword_size']));
+        $embed_code = esc_url_raw(wp_unslash($_POST['games_post_creator_embed_code']));
+        $categories = function_exists('games_parse_categories')
+            ? games_parse_categories(isset($_POST['games_post_creator_category']) ? $_POST['games_post_creator_category'] : array())
+            : array_map('sanitize_text_field', (array) ($_POST['games_post_creator_category'] ?? array()));
+        if (empty($categories)) {
+            $categories = array('Other');
+        }
+        $category = function_exists('games_serialize_categories')
+            ? games_serialize_categories($categories)
+            : $categories;
         $iframe_shortcode = convertLinkToEmbed($embed_code);
-        $description = $_POST['games_post_creator_description'];
+        $description = sanitize_textarea_field(wp_unslash($_POST['games_post_creator_description']));
 
         $content = $iframe_shortcode;
 
@@ -61,8 +68,8 @@ function games_post_creator_form() {
             'meta_input' => array(
                 'embed_code' => $iframe_shortcode,
                 'crossword_size' => $crossword_size,
-                'constructor' => sanitize_text_field($_POST['games_post_creator_constructor']),
-                'editor' => sanitize_text_field($_POST['games_post_creator_editor']),
+                'constructor' => sanitize_text_field(wp_unslash($_POST['games_post_creator_constructor'])),
+                'editor' => sanitize_text_field(wp_unslash($_POST['games_post_creator_editor'])),
                 'category' => $category,
                 'description' => $description,
             ),
@@ -82,6 +89,7 @@ function games_post_creator_form() {
         if ($post_id) {
             // set taxonomies
             wp_set_object_terms($post_id, $game_type, 'game_type');
+            wp_set_object_terms($post_id, $categories, 'game_category', false);
             echo '<div class="notice notice-success is-dismissible"><p>Post created successfully!</p><a href="' . get_permalink($post_id) . '">View Post</a></div>';
             echo "<script>console.log('GAME TYPE $game_type');</script>";
         }
@@ -92,6 +100,7 @@ function games_post_creator_form() {
     <div class="wrap">
         <h1>Create a New Post</h1>
         <form method="post">
+            <?php wp_nonce_field('games_post_creator_create', 'games_post_creator_nonce'); ?>
             <table class="form-table">
                 <tr>
                     <th scope="row"><label for="games_post_creator_title">Title</label></th>
@@ -123,7 +132,13 @@ function games_post_creator_form() {
                 </tr>
                 <tr>
                     <th scope="row"><label for="games_post_creator_category">Category</label></th>
-                    <td><input type="text" name="games_post_creator_category" id="games_post_creator_category" class="regular-text"></td>
+                    <td>
+                        <?php if (function_exists('games_render_category_picker')): ?>
+                            <?php games_render_category_picker('games_post_creator_category', array(), 'games_post_creator_category'); ?>
+                        <?php else: ?>
+                            <input type="text" name="games_post_creator_category[]" id="games_post_creator_category" class="regular-text" placeholder="Category">
+                        <?php endif; ?>
+                    </td>
                 </tr>
                 <tr>
                     <th scope="row"><label for="games_post_creator_description">Description</label></th>
