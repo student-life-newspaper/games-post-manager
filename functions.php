@@ -179,6 +179,60 @@ function games_get_post_categories($post_id) {
     return empty($categories) ? array('Other') : $categories;
 }
 
+/**
+ * Delete game-category terms after their final relationship is removed.
+ *
+ * WordPress keeps unused taxonomy terms by default. Restricting this cleanup to
+ * game_category prevents an edit to a game from affecting unrelated taxonomies.
+ */
+function games_delete_empty_category_terms($term_taxonomy_ids) {
+    foreach (array_unique(array_map('intval', (array) $term_taxonomy_ids)) as $term_taxonomy_id) {
+        $term = get_term_by('term_taxonomy_id', $term_taxonomy_id, 'game_category');
+        if ($term && !is_wp_error($term) && (int) $term->count === 0) {
+            wp_delete_term($term->term_id, 'game_category');
+        }
+    }
+}
+
+// Covers categories removed or replaced while a game is being edited.
+function games_cleanup_categories_after_assignment($object_id, $terms, $term_taxonomy_ids, $taxonomy, $append, $old_term_taxonomy_ids) {
+    if ($taxonomy === 'game_category') {
+        games_delete_empty_category_terms($old_term_taxonomy_ids);
+    }
+}
+add_action('set_object_terms', 'games_cleanup_categories_after_assignment', 10, 6);
+
+// Covers relationships removed when a game is deleted.
+function games_cleanup_categories_after_relationship_deletion($object_id, $term_taxonomy_ids, $taxonomy) {
+    if ($taxonomy === 'game_category') {
+        games_delete_empty_category_terms($term_taxonomy_ids);
+    }
+}
+add_action('deleted_term_relationships', 'games_cleanup_categories_after_relationship_deletion', 10, 3);
+
+// Remove orphaned terms that existed before automatic cleanup was introduced.
+function games_cleanup_existing_empty_category_terms() {
+    if (get_option('games_empty_category_cleanup_version') === '1') {
+        return;
+    }
+
+    $terms = get_terms(array(
+        'taxonomy'   => 'game_category',
+        'hide_empty' => false,
+    ));
+    if (is_wp_error($terms)) {
+        return;
+    }
+
+    foreach ($terms as $term) {
+        if ((int) $term->count === 0) {
+            wp_delete_term($term->term_id, 'game_category');
+        }
+    }
+    update_option('games_empty_category_cleanup_version', '1');
+}
+add_action('init', 'games_cleanup_existing_empty_category_terms', 30);
+
 // Convert JSON-string category meta created by older plugin versions into a
 // native array. This also gives genuinely uncategorized games the documented
 // fallback instead of exposing "[]" in feeds that read post meta directly.
